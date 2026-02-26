@@ -1,0 +1,104 @@
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 16px 0;
+    overflow-x: auto;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.step-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    border: 2px solid var(--gray-700);
+    background: var(--surface-card);
+    transition: all var(--transition-normal);
+    position: relative;
+    z-index: 2;
+}
+
+.step.active .step-icon {
+    border-color: var(--primary-500);
+    background: rgba(249, 115, 22, 0.15);
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.step.completed .step-icon {
+    border-color: var(--success-500);
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success-400);
+    font-weight: bold;
+}
+
+.step-label {
+    margin-top: 6px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.step.active .step-label {
+    color: var(--primary-400);
+    font-weight: 600;
+}
+
+.step.completed .step-label {
+    color: var(--success-400);
+}
+
+.step-connector {
+    position: absolute;
+    top: 21px;
+    left: calc(50% + 21px);
+    width: calc(100% - 42px);
+    height: 2px;
+    background: var(--gray-700);
+    z-index: 1;
+}
+
+.step.completed .step-connector {
+    background: var(--success-500);
+}
+
+.step.active .step-connector {
+    background: linear-gradient(90deg, var(--primary-500), var(--gray-700));
+}
+
+@media (max-width: 600px) {
+    .step {
+        min-width: 60px;
+    }
+
+    .step-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+    }
+
+    .step-label {
+        font-size: 0.6rem;
+    }
+
+    .step-connector {
+        top: 17px;
+        left: calc(50% + 17px);
+        width: calc(100% - 34px);
+    }
+}

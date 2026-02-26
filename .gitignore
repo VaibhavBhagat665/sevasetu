@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Data
+backend/uploads/
+backend/generated_forms/
+
+# Node
+node_modules/
+dist/
+build/
+.DS_Store

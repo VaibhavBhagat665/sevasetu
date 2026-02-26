@@ -1,0 +1,72 @@
+.voice-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.voice-btn {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--surface-glass-border);
+    background: var(--surface-glass);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+}
+
+.voice-btn:hover:not(:disabled) {
+    border-color: var(--primary-400);
+    color: var(--primary-400);
+    background: rgba(249, 115, 22, 0.1);
+}
+
+.voice-btn.listening {
+    border-color: var(--danger-500);
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger-400);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.voice-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pulse-ring {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px solid var(--danger-400);
+    border-radius: 50%;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+
+@keyframes pulseRing {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+.interim-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

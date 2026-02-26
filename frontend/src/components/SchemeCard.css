@@ -1,0 +1,91 @@
+.scheme-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all var(--transition-normal);
+}
+
+.scheme-card.selected {
+    border-color: var(--primary-400);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.2);
+}
+
+.scheme-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.scheme-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.scheme-score {
+    font-size: 0.8rem;
+    color: var(--success-400);
+    font-weight: 600;
+}
+
+.scheme-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+}
+
+.scheme-short {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.scheme-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.scheme-benefits {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--success-400);
+}
+
+.benefits-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.scheme-docs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.docs-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.docs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.scheme-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+}

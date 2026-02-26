@@ -1,0 +1,127 @@
+.doc-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.upload-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.doc-type-select {
+    max-width: 260px;
+}
+
+.uploaded-docs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.doc-card {
+    padding: 16px !important;
+}
+
+.doc-card.error {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.doc-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.doc-card-header h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+}
+
+.doc-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.doc-filename {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.doc-card-header .badge {
+    margin-left: auto;
+}
+
+.doc-extracted {
+    margin-top: 12px;
+    border-top: 1px solid var(--surface-glass-border);
+    padding-top: 12px;
+}
+
+.doc-data-table {
+    width: 100%;
+    font-size: 0.85rem;
+    border-collapse: collapse;
+}
+
+.doc-data-table td {
+    padding: 4px 8px;
+    vertical-align: top;
+}
+
+.field-name {
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: capitalize;
+    width: 35%;
+    white-space: nowrap;
+}
+
+.field-value {
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.sub-key {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.ocr-confidence {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.confidence-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--gray-800);
+    border-radius: 3px;
+    overflow: hidden;
+    max-width: 120px;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-500), var(--success-400));
+    border-radius: 3px;
+    transition: width var(--transition-slow);
+}
+
+.doc-error {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--radius-sm);
+    color: var(--danger-400);
+    font-size: 0.85rem;
+}

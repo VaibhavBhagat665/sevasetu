@@ -55,6 +55,17 @@ class SevasetuPDF(FPDF):
         self.cell(0, 6, f"    {marker}  {label}", ln=True)
 
 
+def sanitize_data(data):
+    """Replace unsupported characters like ₹ for PDF generation."""
+    if isinstance(data, str):
+        return data.replace("₹", "Rs. ")
+    elif isinstance(data, dict):
+        return {k: sanitize_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_data(v) for v in data]
+    return data
+
+
 async def generate_form(form_data: dict) -> dict:
     """
     Generate a filled PDF application form.
@@ -65,6 +76,8 @@ async def generate_form(form_data: dict) -> dict:
     Returns:
         dict with file path and metadata
     """
+    form_data = sanitize_data(form_data)
+    
     pdf = SevasetuPDF()
     pdf.alias_nb_pages()
     pdf.add_page()
@@ -127,7 +140,7 @@ async def generate_form(form_data: dict) -> dict:
             pdf.field_row(label, value)
     else:
         pdf.field_row("Occupation", applicant.get("occupation"))
-        pdf.field_row("Annual Income (₹)", applicant.get("income"))
+        pdf.field_row("Annual Income (Rs.)", applicant.get("income"))
         pdf.field_row("Land Holding (hectares)", applicant.get("land_holding"))
     pdf.ln(3)
 

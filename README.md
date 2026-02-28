@@ -86,9 +86,62 @@ sevasetu/
 6. **Form Generation** → Download auto-filled PDF application form
 7. **Grievance** → Generate formal grievance letter if needed
 
+## 🚀 AWS Deployment Guide (Using $100 Credits)
+
+The easiest and most cost-effective way to use AWS credits for this MVP is to deploy via **Amazon EC2** using Docker Compose.
+
+### Step 1: Launch an EC2 Instance
+1. Go to the AWS Management Console → **EC2**.
+2. Click **Launch Instance**.
+3. **Name**: `SevaSetu-Server`
+4. **AMI**: Select **Ubuntu 24.04 LTS**.
+5. **Instance Type**: `t3.medium` or `t3.large` (A $100 credit easily covers a medium/large instance for the duration of a hackathon/evaluation period).
+6. **Key Pair**: Create and download a new key pair (`sevasetu-key.pem`).
+7. **Network Settings**: Allow SSH (port 22) and HTTP (port 80) traffic.
+8. Click **Launch Instance**.
+
+### Step 2: Connect and Install Docker
+Connect to your instance via SSH:
+```bash
+ssh -i "sevasetu-key.pem" ubuntu@<YOUR_EC2_PUBLIC_IP>
+```
+
+Install Docker and Git:
+```bash
+sudo apt update
+sudo apt install docker.io docker-compose git -y
+sudo usermod -aG docker ubuntu
+```
+*Logout and log back in for docker group changes to take effect.*
+
+### Step 3: Clone and Run
+1. Clone your GitHub repository onto the EC2 instance:
+```bash
+git clone https://github.com/VaibhavBhagat665/sevasetu.git
+cd sevasetu
+```
+
+2. *(Optional)* Add your Gemini key to the backend environment:
+```bash
+echo "GEMINI_API_KEY=your_gemini_api_key_here" > backend/.env
+```
+
+3. Build and launch the application:
+```bash
+docker-compose up -d --build
+```
+
+### Step 4: Access the App
+Open your browser and navigate to: `http://<YOUR_EC2_PUBLIC_IP>`
+
+The backend APIs will automatically route internally. The React frontend is served natively via Nginx on port 80.
+
+---
+
 ## 🛠️ Key Technologies
 
 - **Backend**: FastAPI, FAISS, sentence-transformers, fpdf2, fuzzywuzzy
-- **Frontend**: React, Vite, Web Speech API
+- **Frontend**: React, Vite, Web Speech API, Vite PWA
 - **AI**: Google Gemini (optional), semantic embeddings, rule engine
+- **Deployment**: Docker, Nginx, Amazon EC2
 - **PDF**: fpdf2 for form and grievance generation

@@ -5,18 +5,30 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    container_name: sevasetu-backend
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - backend-uploads:/app/uploads
+      - backend-forms:/app/generated_forms
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: sevasetu-frontend
     ports:
       - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  backend-uploads:
+  backend-forms:

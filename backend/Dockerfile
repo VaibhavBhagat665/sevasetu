@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -9,8 +9,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend source
 COPY . .
 
-# Expose port
+# Create required directories
+RUN mkdir -p /app/uploads /app/generated_forms
+
 EXPOSE 8000
 
-# Run FastAPI server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with production workers
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

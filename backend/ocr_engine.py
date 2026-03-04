@@ -1,17 +1,18 @@
 """
 SevaSetu — OCR Engine (Simulated)
-Accepts document uploads and returns simulated but realistic extracted data.
-Architecture is pluggable for real Tesseract/PaddleOCR integration.
+Uploads documents to Amazon S3 and returns simulated extracted data.
+Architecture is pluggable for real Tesseract/Textract integration.
 """
 
 import uuid
 import os
 from datetime import datetime
+from aws_config import get_s3_client, is_aws_available, S3_BUCKET_DOCUMENTS
 
-# In-memory document store (for MVP — no persistent storage)
+# In-memory document store
 _documents = {}
 
-# Upload directory
+# Local fallback upload directory
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -20,7 +21,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 MOCK_EXTRACTIONS = {
     "AADHAAR": {
         "name": "Raj Kumar Sharma",
-        "name_hindi": "राज कुमार शर्मा",
+        "father_name": "Harish Sharma",
         "dob": "1985-06-15",
         "gender": "Male",
         "aadhaar_number": "XXXX-XXXX-4521",
@@ -96,23 +97,43 @@ MOCK_EXTRACTIONS = {
 
 
 async def upload_document(file, document_type: str, user_id: str = None) -> dict:
-    """Save uploaded document and return document ID."""
+    """Save uploaded document to S3 (or local fallback) and return document ID."""
     doc_id = str(uuid.uuid4())
-
-    # Save file
     file_ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-    file_path = os.path.join(UPLOAD_DIR, f"{doc_id}{file_ext}")
+    s3_key = f"documents/{user_id or 'demo-user'}/{doc_id}{file_ext}"
 
     content = await file.read()
-    with open(file_path, "wb") as f:
-        f.write(content)
+
+    # Try S3 first, fallback to local
+    storage_location = "local"
+    if is_aws_available():
+        try:
+            s3 = get_s3_client()
+            s3.put_object(
+                Bucket=S3_BUCKET_DOCUMENTS,
+                Key=s3_key,
+                Body=content,
+                ContentType=file.content_type or "application/octet-stream",
+            )
+            storage_location = "s3"
+            print(f"[OCR] Uploaded to S3: {s3_key}")
+        except Exception as e:
+            print(f"[OCR] S3 upload failed, using local: {e}")
+            storage_location = "local"
+
+    if storage_location == "local":
+        file_path = os.path.join(UPLOAD_DIR, f"{doc_id}{file_ext}")
+        with open(file_path, "wb") as f:
+            f.write(content)
+        s3_key = file_path
 
     # Store metadata
     _documents[doc_id] = {
         "document_id": doc_id,
         "user_id": user_id or "demo-user",
         "document_type": document_type.upper(),
-        "file_path": file_path,
+        "storage": storage_location,
+        "storage_key": s3_key,
         "file_name": file.filename,
         "uploaded_at": datetime.now().isoformat(),
         "status": "uploaded",
@@ -122,6 +143,7 @@ async def upload_document(file, document_type: str, user_id: str = None) -> dict
     return {
         "document_id": doc_id,
         "status": "uploaded",
+        "storage": storage_location,
         "message": f"Document '{file.filename}' uploaded successfully. Ready for OCR extraction.",
     }
 

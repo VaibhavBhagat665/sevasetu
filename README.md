@@ -1,147 +1,113 @@
 # SevaSetu — AI-Powered Welfare Scheme Assistant
 
-An Agentic AI platform that helps Indian citizens and CSC/VLE operators successfully apply for government welfare schemes by preventing application errors and automating documentation workflows.
+An Agentic AI platform built on **AWS** that helps Indian citizens and CSC/VLE operators successfully apply for government welfare schemes by preventing application errors and automating documentation workflows.
 
-## 🚀 Quick Start
+## 🏗️ AWS Architecture
+
+| AWS Service | Purpose |
+|-------------|---------|
+| **Amazon Bedrock** (Claude 3 Haiku) | LLM-powered intent extraction from natural language |
+| **Amazon S3** | Secure document storage & generated PDF hosting |
+| **Amazon DynamoDB** | Persistent session & workflow state management |
+| **Amazon EC2** | Hosts the FastAPI backend with FAISS vector search |
+| **Nginx (on EC2)** | Reverse proxy serving React frontend & routing API |
+
+### Why AI is Required
+- Citizens describe needs in natural language (Hindi/English) — AI extracts structured intent (occupation, income, state, etc.)
+- Semantic search via FAISS finds best-matching schemes from 10+ government programs
+- Deterministic rule engine explains eligibility decisions transparently
+
+### Architecture Diagram
+
+```
+Browser → Nginx (port 80)
+             ├── / → React SPA (static files)
+             └── /api/* → FastAPI Backend
+                          ├── Amazon Bedrock → Intent extraction
+                          ├── Amazon S3 → Document & PDF storage
+                          ├── Amazon DynamoDB → Session persistence
+                          ├── FAISS → Semantic scheme search
+                          └── fpdf2 → PDF form generation
+```
+
+## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
-- Python 3.9+ 
-- Node.js 18+
-- npm
+- Python 3.9+, Node.js 18+, npm
 
-### 1. Backend Setup
-
+### Backend
 ```bash
 cd backend
 pip install -r requirements.txt
 python main.py
 ```
+Backend at **http://localhost:8000** | Swagger at **http://localhost:8000/docs**
 
-The backend starts at **http://localhost:8000**. Visit http://localhost:8000/docs for Swagger API docs.
-
-> **Optional**: Set `GEMINI_API_KEY` in `backend/.env` for LLM-powered intent extraction. Without it, keyword-based fallback is used.
-
-### 2. Frontend Setup
-
+### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Frontend at **http://localhost:5173**
 
-The frontend starts at **http://localhost:5173**.
-
-## 🏗️ Architecture
-
-```
-sevasetu/
-├── backend/                    # Python FastAPI server
-│   ├── main.py                 # API entry point (8 endpoints)
-│   ├── schemes_data.py         # 10 government schemes knowledge base
-│   ├── vector_store.py         # FAISS semantic search index
-│   ├── intent_engine.py        # Gemini LLM + keyword fallback
-│   ├── scheme_matcher.py       # Vector search for scheme discovery
-│   ├── eligibility_engine.py   # Rule-based eligibility checker
-│   ├── ocr_engine.py           # Simulated OCR document extraction
-│   ├── document_validator.py   # Cross-document mismatch detection
-│   ├── form_generator.py       # PDF application form auto-fill
-│   ├── grievance_generator.py  # Grievance letter PDF generation
-│   └── agent_workflow.py       # State machine orchestrator
-│
-├── frontend/                   # React + Vite PWA
-│   └── src/
-│       ├── App.jsx             # Root with navigation
-│       ├── pages/
-│       │   ├── Home.jsx        # Landing page
-│       │   └── Assistant.jsx   # 5-step guided workflow
-│       ├── components/
-│       │   ├── VoiceInput.jsx  # Web Speech API microphone
-│       │   ├── SchemeCard.jsx  # Scheme result card
-│       │   ├── StepIndicator.jsx # Progress tracker
-│       │   └── DocumentUpload.jsx # Upload + OCR display
-│       └── services/
-│           └── api.js          # Backend API client
-```
+> Without AWS credentials, the system runs in **offline mode** using keyword-based intent extraction and local file storage.
 
 ## 📡 API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/intent` | Extract structured intent from text |
-| POST | `/scheme-match` | Semantic search for matching schemes |
-| POST | `/validate-eligibility` | Rule-based eligibility check |
-| POST | `/upload-documents` | Upload document for OCR |
+| POST | `/intent` | Extract structured intent (Bedrock / fallback) |
+| POST | `/scheme-match` | FAISS semantic search for matching schemes |
+| POST | `/validate-eligibility` | Rule-based eligibility with explanations |
+| POST | `/upload-documents` | Upload document to S3 for OCR |
 | POST | `/extract-ocr/{id}` | Extract data from uploaded document |
 | POST | `/validate-documents` | Cross-validate document consistency |
-| POST | `/generate-form` | Generate auto-filled PDF application |
+| POST | `/generate-form` | Generate auto-filled PDF (stored in S3) |
 | POST | `/generate-grievance` | Generate grievance letter PDF |
+| GET  | `/health` | Health check (AWS connectivity status) |
 
-## 🔄 User Workflow
+## 🚀 AWS Deployment Guide
 
-1. **Voice/Text Input** → Describe needs in natural language
-2. **Scheme Discovery** → AI finds matching government schemes via FAISS vector search
-3. **Eligibility Check** → Rule engine validates against scheme criteria with explanations
-4. **Document Upload** → Upload Aadhaar, bank passbook, etc. for OCR extraction
-5. **Mismatch Detection** → Cross-validate name, address, pincode across documents
-6. **Form Generation** → Download auto-filled PDF application form
-7. **Grievance** → Generate formal grievance letter if needed
+### Step 1: Launch EC2 Instance
+1. AWS Console → **EC2** → **Launch Instance**
+2. **AMI**: Ubuntu 24.04 LTS | **Type**: `t3.medium` | **Storage**: 20GB
+3. **IAM Role**: Create role with `AmazonS3FullAccess`, `AmazonDynamoDBFullAccess`, `AmazonBedrockFullAccess`
+4. **Security Group**: Allow SSH (22), HTTP (80)
+5. **Key Pair**: Download `.pem` file
 
-## 🚀 AWS Deployment Guide (Using $100 Credits)
+### Step 2: Enable Bedrock Model Access
+AWS Console → **Bedrock** → **Model access** → Request access for **Anthropic Claude 3 Haiku**
 
-The easiest and most cost-effective way to use AWS credits for this MVP is to deploy via **Amazon EC2** using Docker Compose.
-
-### Step 1: Launch an EC2 Instance
-1. Go to the AWS Management Console → **EC2**.
-2. Click **Launch Instance**.
-3. **Name**: `SevaSetu-Server`
-4. **AMI**: Select **Ubuntu 24.04 LTS**.
-5. **Instance Type**: `t3.medium` or `t3.large` (A $100 credit easily covers a medium/large instance for the duration of a hackathon/evaluation period).
-6. **Key Pair**: Create and download a new key pair (`sevasetu-key.pem`).
-7. **Network Settings**: Allow SSH (port 22) and HTTP (port 80) traffic.
-8. Click **Launch Instance**.
-
-### Step 2: Connect and Install Docker
-Connect to your instance via SSH:
+### Step 3: Connect & Install Docker
 ```bash
-ssh -i "sevasetu-key.pem" ubuntu@<YOUR_EC2_PUBLIC_IP>
-```
-
-Install Docker and Git:
-```bash
-sudo apt update
-sudo apt install docker.io docker-compose git -y
+ssh -i "sevasetu-key.pem" ubuntu@<EC2_PUBLIC_IP>
+sudo apt update && sudo apt install docker.io docker-compose git awscli -y
 sudo usermod -aG docker ubuntu
+exit  # Re-login for group change
 ```
-*Logout and log back in for docker group changes to take effect.*
 
-### Step 3: Clone and Run
-1. Clone your GitHub repository onto the EC2 instance:
+### Step 4: Clone, Setup AWS Resources & Deploy
 ```bash
+ssh -i "sevasetu-key.pem" ubuntu@<EC2_PUBLIC_IP>
 git clone https://github.com/VaibhavBhagat665/sevasetu.git
 cd sevasetu
-```
 
-2. *(Optional)* Add your Gemini key to the backend environment:
-```bash
-echo "GEMINI_API_KEY=your_gemini_api_key_here" > backend/.env
-```
+# Create S3 buckets, DynamoDB table
+chmod +x setup_aws.sh && ./setup_aws.sh
 
-3. Build and launch the application:
-```bash
+# Build and launch
 docker-compose up -d --build
 ```
 
-### Step 4: Access the App
-Open your browser and navigate to: `http://<YOUR_EC2_PUBLIC_IP>`
-
-The backend APIs will automatically route internally. The React frontend is served natively via Nginx on port 80.
-
----
+### Step 5: Access Your App
+Open `http://<EC2_PUBLIC_IP>` in your browser 🎉
 
 ## 🛠️ Key Technologies
 
-- **Backend**: FastAPI, FAISS, sentence-transformers, fpdf2, fuzzywuzzy
-- **Frontend**: React, Vite, Web Speech API, Vite PWA
-- **AI**: Google Gemini (optional), semantic embeddings, rule engine
+- **AI/ML**: Amazon Bedrock (Claude 3 Haiku), FAISS, sentence-transformers
+- **Storage**: Amazon S3, Amazon DynamoDB
+- **Backend**: FastAPI, Python, fpdf2, fuzzywuzzy
+- **Frontend**: React, Vite, Web Speech API, PWA
 - **Deployment**: Docker, Nginx, Amazon EC2
-- **PDF**: fpdf2 for form and grievance generation
+

@@ -92,7 +92,12 @@ export async function generateGrievance(data) {
     });
 }
 
-/** Download a generated PDF */
-export function getDownloadUrl(fileName) {
-    return `${API_BASE}/download/form/${fileName}`;
+/** Get download URL — uses S3 pre-signed URL from API response, or local fallback */
+export function getDownloadUrl(urlOrFileName) {
+    // If it's already a full URL (S3 pre-signed), return as-is
+    if (urlOrFileName && urlOrFileName.startsWith('http')) {
+        return urlOrFileName;
+    }
+    // Fallback to local download endpoint
+    return `${API_BASE}/download/form/${urlOrFileName}`;
 }

@@ -1,28 +1,11 @@
 """
 SevaSetu — Intent Extraction Engine
-Uses Google Gemini (or keyword fallback) to extract structured intent from user text.
+Uses Amazon Bedrock (Claude 3 Haiku) or keyword fallback to extract structured intent.
 """
 
-import os
 import json
 import re
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Try to import Gemini
-_gemini_available = False
-try:
-    import google.generativeai as genai
-    api_key = os.getenv("GEMINI_API_KEY", "")
-    if api_key:
-        genai.configure(api_key=api_key)
-        _gemini_available = True
-        print("[IntentEngine] Gemini API configured successfully")
-    else:
-        print("[IntentEngine] No GEMINI_API_KEY found, using keyword fallback")
-except ImportError:
-    print("[IntentEngine] google-generativeai not installed, using keyword fallback")
+from aws_config import get_bedrock_client, is_aws_available, BEDROCK_MODEL_ID
 
 
 INTENT_PROMPT = """You are SevaSetu, an AI assistant helping Indian citizens find and apply for government welfare schemes.
@@ -130,6 +113,24 @@ def _keyword_fallback(text: str) -> dict:
     if income_match:
         attrs["income"] = int(income_match.group(1).replace(",", ""))
 
+    # Land holding
+    land_match = re.search(r'([\d.]+)\s*(?:hectare|acre|bigha)', text_lower)
+    if land_match:
+        attrs["land_holding"] = float(land_match.group(1))
+
+    # State
+    states = [
+        "andhra pradesh", "bihar", "chhattisgarh", "goa", "gujarat", "haryana",
+        "jharkhand", "karnataka", "kerala", "madhya pradesh", "maharashtra",
+        "odisha", "punjab", "rajasthan", "tamil nadu", "telangana",
+        "uttar pradesh", "uttarakhand", "west bengal", "assam", "manipur",
+        "meghalaya", "mizoram", "nagaland", "sikkim", "tripura", "arunachal pradesh",
+    ]
+    for st in states:
+        if st in text_lower:
+            attrs["state"] = st.title()
+            break
+
     return {
         "intent": intent,
         "scheme_type": scheme_type,
@@ -139,22 +140,40 @@ def _keyword_fallback(text: str) -> dict:
 
 
 async def extract_intent(user_text: str) -> dict:
-    """Extract structured intent from user text using LLM or fallback."""
+    """Extract structured intent from user text using Amazon Bedrock or fallback."""
 
-    if _gemini_available:
+    if is_aws_available():
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            bedrock = get_bedrock_client()
             prompt = INTENT_PROMPT.format(user_text=user_text)
-            response = model.generate_content(prompt)
-            text = response.text.strip()
+
+            body = json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 1024,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1,
+            })
+
+            response = bedrock.invoke_model(
+                modelId=BEDROCK_MODEL_ID,
+                body=body,
+                contentType="application/json",
+                accept="application/json",
+            )
+
+            response_body = json.loads(response["body"].read())
+            text = response_body["content"][0]["text"].strip()
 
             # Extract JSON from response
             json_match = re.search(r'\{[\s\S]*\}', text)
             if json_match:
                 result = json.loads(json_match.group())
+                print(f"[IntentEngine] Bedrock extracted intent: {result.get('intent')}")
                 return result
         except Exception as e:
-            print(f"[IntentEngine] Gemini error, falling back to keywords: {e}")
+            print(f"[IntentEngine] Bedrock error, falling back to keywords: {e}")
 
     # Fallback
     return _keyword_fallback(user_text)

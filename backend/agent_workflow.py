@@ -1,10 +1,12 @@
 """
 SevaSetu — Agent Workflow Orchestrator
-State machine managing the end-to-end application flow with fallback handling.
+State machine managing the end-to-end application flow with DynamoDB persistence.
 """
 
 from enum import Enum
 from datetime import datetime
+from aws_config import get_dynamodb_resource, is_aws_available, DYNAMO_TABLE_SESSIONS
+import json
 
 
 class WorkflowState(str, Enum):
@@ -45,8 +47,43 @@ STATE_DESCRIPTIONS = {
     WorkflowState.ERROR: "Something went wrong",
 }
 
-# In-memory session store
+# In-memory session store (fallback)
 _sessions = {}
+
+# DynamoDB table reference
+_dynamo_table = None
+
+
+def _get_table():
+    """Get DynamoDB table (lazy init)."""
+    global _dynamo_table
+    if _dynamo_table is None and is_aws_available():
+        try:
+            dynamodb = get_dynamodb_resource()
+            _dynamo_table = dynamodb.Table(DYNAMO_TABLE_SESSIONS)
+            print(f"[Workflow] Connected to DynamoDB table: {DYNAMO_TABLE_SESSIONS}")
+        except Exception as e:
+            print(f"[Workflow] DynamoDB unavailable: {e}")
+    return _dynamo_table
+
+
+def _save_session_to_dynamo(session):
+    """Persist session to DynamoDB."""
+    table = _get_table()
+    if table is None:
+        return
+    try:
+        item = {
+            "session_id": session.session_id,
+            "current_state": session.current_state.value,
+            "history": json.dumps(session.history[-20:]),
+            "data": json.dumps(session.data, default=str),
+            "created_at": session.created_at,
+            "updated_at": session.updated_at,
+        }
+        table.put_item(Item=item)
+    except Exception as e:
+        print(f"[Workflow] DynamoDB save error: {e}")
 
 
 class WorkflowSession:
@@ -88,6 +125,7 @@ class WorkflowSession:
             old_state = self.current_state
             self.current_state = next_state
             self._log_transition(old_state, next_state, reason)
+            _save_session_to_dynamo(self)
             return True
         return False
 
@@ -98,7 +136,7 @@ class WorkflowSession:
             "state_description": STATE_DESCRIPTIONS[self.current_state],
             "next_valid_states": [s.value for s in VALID_TRANSITIONS.get(self.current_state, [])],
             "data_collected": {k: v is not None for k, v in self.data.items()},
-            "history": self.history[-5:],  # last 5 transitions
+            "history": self.history[-5:],
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -107,6 +145,7 @@ class WorkflowSession:
         """Update session data."""
         self.data[key] = value
         self.updated_at = datetime.now().isoformat()
+        _save_session_to_dynamo(self)
 
 
 def create_session(session_id: str = None) -> WorkflowSession:
@@ -115,6 +154,7 @@ def create_session(session_id: str = None) -> WorkflowSession:
     sid = session_id or str(uuid.uuid4())
     session = WorkflowSession(sid)
     _sessions[sid] = session
+    _save_session_to_dynamo(session)
     return session
 
 

@@ -7,6 +7,7 @@ from fpdf import FPDF
 import os
 import uuid
 from datetime import datetime
+from aws_config import get_s3_client, get_presigned_url, is_aws_available, S3_BUCKET_FORMS
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "generated_forms")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -178,10 +179,26 @@ async def generate_form(form_data: dict) -> dict:
     file_path = os.path.join(OUTPUT_DIR, file_name)
     pdf.output(file_path)
 
+    # Upload to S3 if available
+    download_url = f"/download/form/{file_name}"
+    storage = "local"
+    if is_aws_available():
+        try:
+            s3 = get_s3_client()
+            s3_key = f"forms/{file_name}"
+            s3.upload_file(file_path, S3_BUCKET_FORMS, s3_key)
+            download_url = get_presigned_url(S3_BUCKET_FORMS, s3_key) or download_url
+            storage = "s3"
+            print(f"[FormGen] Uploaded to S3: {s3_key}")
+        except Exception as e:
+            print(f"[FormGen] S3 upload failed, using local: {e}")
+
     return {
         "status": "success",
         "application_reference": app_ref,
         "file_name": file_name,
         "file_path": file_path,
+        "download_url": download_url,
+        "storage": storage,
         "message": f"Application form generated successfully. Reference: {app_ref}",
     }

@@ -91,6 +91,7 @@ async def root():
         "service": "SevaSetu API",
         "version": "1.0.0-mvp",
         "status": "operational",
+        "infrastructure": "AWS (Bedrock + S3 + DynamoDB)",
         "endpoints": [
             "POST /intent",
             "POST /scheme-match",
@@ -102,7 +103,18 @@ async def root():
             "POST /generate-grievance",
             "POST /workflow/step",
             "GET /workflow/status/{session_id}",
+            "GET /health",
         ]
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check for load balancer."""
+    from aws_config import is_aws_available
+    return {
+        "status": "healthy",
+        "aws_connected": is_aws_available(),
     }
 
 
@@ -201,12 +213,6 @@ async def api_generate_form(req: FormRequest):
     """Generate an auto-filled PDF application form."""
     try:
         result = await generate_form(req.model_dump())
-        if result["status"] == "success":
-            # Return JSON with download URL
-            return {
-                **result,
-                "download_url": f"/download/form/{result['file_name']}",
-            }
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -219,11 +225,6 @@ async def api_generate_grievance(req: GrievanceRequest):
     """Generate a formal grievance letter PDF."""
     try:
         result = await generate_grievance(req.model_dump())
-        if result["status"] == "success":
-            return {
-                **result,
-                "download_url": f"/download/form/{result['file_name']}",
-            }
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

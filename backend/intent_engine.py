@@ -1,11 +1,28 @@
 """
 SevaSetu — Intent Extraction Engine
-Uses Amazon Bedrock (Claude 3 Haiku) or keyword fallback to extract structured intent.
+Uses Google Gemini (or keyword fallback) to extract structured intent from user text.
 """
 
+import os
 import json
 import re
-from aws_config import get_bedrock_client, is_aws_available, BEDROCK_MODEL_ID
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Try to import Gemini
+_gemini_available = False
+try:
+    import google.generativeai as genai
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if api_key:
+        genai.configure(api_key=api_key)
+        _gemini_available = True
+        print("[IntentEngine] Gemini API configured successfully")
+    else:
+        print("[IntentEngine] No GEMINI_API_KEY found, using keyword fallback")
+except ImportError:
+    print("[IntentEngine] google-generativeai not installed, using keyword fallback")
 
 
 INTENT_PROMPT = """You are SevaSetu, an AI assistant helping Indian citizens find and apply for government welfare schemes.
@@ -140,40 +157,23 @@ def _keyword_fallback(text: str) -> dict:
 
 
 async def extract_intent(user_text: str) -> dict:
-    """Extract structured intent from user text using Amazon Bedrock or fallback."""
+    """Extract structured intent from user text using LLM or fallback."""
 
-    if is_aws_available():
+    if _gemini_available:
         try:
-            bedrock = get_bedrock_client()
+            model = genai.GenerativeModel("gemini-1.5-flash")
             prompt = INTENT_PROMPT.format(user_text=user_text)
-
-            body = json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1024,
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.1,
-            })
-
-            response = bedrock.invoke_model(
-                modelId=BEDROCK_MODEL_ID,
-                body=body,
-                contentType="application/json",
-                accept="application/json",
-            )
-
-            response_body = json.loads(response["body"].read())
-            text = response_body["content"][0]["text"].strip()
+            response = model.generate_content(prompt)
+            text = response.text.strip()
 
             # Extract JSON from response
             json_match = re.search(r'\{[\s\S]*\}', text)
             if json_match:
                 result = json.loads(json_match.group())
-                print(f"[IntentEngine] Bedrock extracted intent: {result.get('intent')}")
+                print(f"[IntentEngine] Gemini extracted intent: {result.get('intent')}")
                 return result
         except Exception as e:
-            print(f"[IntentEngine] Bedrock error, falling back to keywords: {e}")
+            print(f"[IntentEngine] Gemini error, falling back to keywords: {e}")
 
     # Fallback
     return _keyword_fallback(user_text)
